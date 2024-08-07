@@ -10,9 +10,12 @@ interface UserRequestBody {
   phoneNumber: string;
   age: number;
 }
-interface userChangePassword {
+interface userChangePasswordBody {
   oldPassword: string;
   newPassword: string;
+}
+interface userParams {
+  id: string;
 }
 interface userLogin {
   userName: string;
@@ -93,11 +96,23 @@ export const userAuthController = {
     });
   }),
   changePassword: CatchError(
-    async (req: Request<{}, {}, userChangePassword>, res: Response) => {
+    async (
+      req: Request<userParams, {}, userChangePasswordBody>,
+      res: Response
+    ) => {
       const { oldPassword, newPassword } = req.body;
 
-      const user = await User.findById(req.user.id);
+      const { id } = req.params;
+
+      const user = await User.findById(id);
+
       if (!user) throw new AppError("User not found", 400);
+
+      if (!req.user) {
+        throw new AppError("Unauthorized", 401);
+      }
+
+      if (user.id != req.user.id) throw new AppError("Unauthorized", 401);
 
       const isMatch: boolean = await bcrypt.compare(oldPassword, user.password);
 

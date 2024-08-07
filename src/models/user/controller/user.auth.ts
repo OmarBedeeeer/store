@@ -11,36 +11,36 @@ interface DecodedToken {
   phoneNumber: string;
   address: string;
 }
-export const authentecation = (
+
+export const authentecation = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  let token: string | undefined = req.header("token");
+  try {
+    let token: string | undefined = req.header("token");
 
-  if (!token) throw new AppError("UnAuthorized", 401);
+    if (!token) throw new AppError("UnAuthorized", 401);
+    // TODO: check if token is valid
+    if (token.startsWith("Bearer ")) throw new AppError("Invalid token", 401);
 
-  if (!token.startsWith("Bearer ")) throw new AppError("Invalid token", 401);
+    let splitedToken: string[] = token.split("Bearer ");
 
-  let splitedToken: string[] = token.split("Bearer ");
-
-  //don't have refresh token yet
-
-  jwt.verify(
-    splitedToken[1] as string,
-    process.env.SECRET_KEY as string,
-    (err: VerifyErrors | null, decoded) => {
-      if (err) throw new AppError(err.message, 498);
-      req.user = decoded;
-    }
-  );
-
-  next();
+    const payload = jwt.verify(
+      splitedToken[1] as string,
+      process.env.JWT_SECRET as string
+    );
+    req.user = payload as Payload;
+    next();
+  } catch (error) {
+    res.status(401).send("invaled token");
+    console.log(error);
+  }
 };
 
 export const authorized = (role: string) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const { role: userRole } = req.user;
+    const { role: userRole } = req.user as Payload;
     if (role !== userRole) throw new AppError("Forbidden", 403);
     next();
   };

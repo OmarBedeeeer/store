@@ -37,4 +37,4 @@ lerna-debug.log*
 # dotenv
 .env
 
-uploads/
+uploads
